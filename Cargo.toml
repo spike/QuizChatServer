@@ -1,0 +1,12 @@
+[package]
+name = "quiz-chat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7.5", features = ["ws"] }
+futures = "0.3.30"
+tokio = { version = "1.38.0", features = ["full"] }
+tower = { version = "0.4.13", features = ["util"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

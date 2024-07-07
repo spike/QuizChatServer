@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat</title>
     <style>
+        /* Your existing styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
@@ -122,8 +123,7 @@
             <button id="show-answers" disabled>Show Answers</button>
         </div>
         <div id="chat-input">
-            <input id="input" type="text" placeholder="Type your 
-message...">
+            <input id="input" type="text" placeholder="Type your message...">
             <button id="send">Send</button>
         </div>
     </div>
@@ -141,7 +141,17 @@ message...">
 
         joinBtn.addEventListener("click", function() {
             this.disabled = true;
-            websocket = new WebSocket("ws://localhost:3000/websocket");
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            let websocketUrl;
+
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                websocketUrl = `${protocol}//${hostname}:3000/websocket`;
+            } else {
+                websocketUrl = `${protocol}//quiz-chat-sparkling-wildflower-5475.fly.dev/websocket`;
+            }
+
+            websocket = new WebSocket(websocketUrl);
 
             websocket.onopen = function() {
                 console.log("connection opened");

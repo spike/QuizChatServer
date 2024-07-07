@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for quiz-chat on 2024-06-18T15:38:05-07:00
+# fly.toml app configuration file generated for quiz-chat-sparkling-wildflower-5475 on 2024-06-18T16:54:16-07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'quiz-chat'
+app = 'quiz-chat-sparkling-wildflower-5475'
 primary_region = 'sjc'
 
 [build]

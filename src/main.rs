@@ -86,14 +86,16 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
         }
     }
 
+    let sender = Arc::new(Mutex::new(sender));
     let mut rx = state.tx.subscribe();
     let msg = format!("{username} joined.");
     tracing::debug!("{msg}");
     let _ = state.tx.send(msg);
 
+    let sender_clone = sender.clone();
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            if sender.send(Message::Text(msg)).await.is_err() {
+            if let Err(_) = sender_clone.lock().await.send(Message::Text(msg)).await {
                 break;
             }
         }
@@ -103,6 +105,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
     let name = username.clone();
 
     let state_clone = state.clone();
+    let sender_clone = sender.clone();
     let mut recv_task = tokio::spawn(async move {
         loop {
             match timeout(Duration::from_secs(7200), receiver.next()).await {
@@ -113,7 +116,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
                         show_answers(&state_clone).await;
                     } else {
                         let is_quiz_mode = *state_clone.quiz_mode.lock().unwrap();
-                        if (is_quiz_mode) {
+                        if is_quiz_mode {
                             submit_answer(&state_clone, &name, &text).await;
                         } else {
                             let _ = tx.send(format!("{name}: {text}"));
@@ -123,7 +126,7 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
                 Ok(Some(Ok(_))) => (),
                 Ok(Some(Err(_))) | Ok(None) => break,
                 Err(_) => {
-                    let _ = sender.send(Message::Close(None)).await;
+                    let _ = sender_clone.lock().await.send(Message::Close(None)).await;
                     break;
                 },
             }

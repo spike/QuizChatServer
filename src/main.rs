@@ -13,6 +13,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tokio::sync::broadcast;
+use tokio::time::{timeout, Duration};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 // Our shared state
@@ -103,18 +104,28 @@ async fn websocket(stream: WebSocket, state: Arc<AppState>) {
 
     let state_clone = state.clone();
     let mut recv_task = tokio::spawn(async move {
-        while let Some(Ok(Message::Text(text))) = receiver.next().await {
-            if text == "/quiz" {
-                start_quiz(&state_clone, &name).await;
-            } else if text == "/show" {
-                show_answers(&state_clone).await;
-            } else {
-                let is_quiz_mode = *state_clone.quiz_mode.lock().unwrap();
-                if is_quiz_mode {
-                    submit_answer(&state_clone, &name, &text).await;
-                } else {
-                    let _ = tx.send(format!("{name}: {text}"));
-                }
+        loop {
+            match timeout(Duration::from_secs(7200), receiver.next()).await {
+                Ok(Some(Ok(Message::Text(text)))) => {
+                    if text == "/quiz" {
+                        start_quiz(&state_clone, &name).await;
+                    } else if text == "/show" {
+                        show_answers(&state_clone).await;
+                    } else {
+                        let is_quiz_mode = *state_clone.quiz_mode.lock().unwrap();
+                        if (is_quiz_mode) {
+                            submit_answer(&state_clone, &name, &text).await;
+                        } else {
+                            let _ = tx.send(format!("{name}: {text}"));
+                        }
+                    }
+                },
+                Ok(Some(Ok(_))) => (),
+                Ok(Some(Err(_))) | Ok(None) => break,
+                Err(_) => {
+                    let _ = sender.send(Message::Close(None)).await;
+                    break;
+                },
             }
         }
     });
